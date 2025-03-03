@@ -1,4 +1,5 @@
 resource "aws_security_group" "allow_ssh" {
+  vpc_id      = var.vpc_id
   name        = var.sg_names.allow_ssh
   description = "Allow SSH access"
   ingress {
@@ -16,6 +17,7 @@ resource "aws_security_group" "allow_ssh" {
 }
 
 resource "aws_security_group" "frontend_sg" {
+  vpc_id      = var.vpc_id
   name        = var.sg_names.frontend_sg
   description = "Allow traffic to Frontend Server"
   ingress {
@@ -33,6 +35,7 @@ resource "aws_security_group" "frontend_sg" {
 }
 
 resource "aws_security_group" "backend_sg" {
+  vpc_id      = var.vpc_id
   name        = var.sg_names.backend_sg
   description = "Allow traffic to Backend Server"
   ingress {
@@ -50,6 +53,7 @@ resource "aws_security_group" "backend_sg" {
 }
 
 resource "aws_security_group" "db_sg" {
+  vpc_id      = var.vpc_id
   name        = var.sg_names.db_sg
   description = "Allow traffic to DB Server"
   ingress {

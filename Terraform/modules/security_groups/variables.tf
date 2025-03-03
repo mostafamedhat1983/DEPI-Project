@@ -1,3 +1,8 @@
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID where Security Groups will be created"
+}
+
 variable "sg_names" {
   type = object({
     allow_ssh  = string
@@ -6,12 +11,6 @@ variable "sg_names" {
     db_sg     = string
   })
   description = "Names for security groups"
-  default = {
-    allow_ssh  = "allow_ssh"
-    frontend_sg = "frontend_sg"
-    backend_sg  = "backend_sg"
-    db_sg     = "db_sg"
-  }
 }
 
 variable "ssh_port" {

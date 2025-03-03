@@ -11,8 +11,16 @@ provider "aws" {
   region = var.aws_region
 }
 
+module "vpc" {
+  source = "./modules/vpc"
+  vpc_cidr_block = var.vpc_cidr_block
+  public_subnet_cidr_block = var.public_subnet_cidr_block
+  availability_zone = var.availability_zone
+}
+
 module "security_groups" {
   source = "./modules/security_groups"
+  vpc_id = module.vpc.vpc_id
   sg_names = {
     allow_ssh  = "allow_ssh"
     frontend_sg = "frontend_sg"
@@ -27,6 +35,7 @@ module "security_groups" {
 
 module "instances" {
   source             = "./modules/instances"
+  subnet_id          = module.vpc.public_subnet_id
   security_group_ids = module.security_groups.security_group_ids
   instance_ami       = var.instance_ami
   instance_type      = var.instance_type

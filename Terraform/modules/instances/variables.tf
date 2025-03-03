@@ -15,11 +15,6 @@ variable "instance_names" {
     db       = string
   })
   description = "Names for instances"
-  default = { 
-    frontend = "frontend-server"
-    backend  = "backend-server"
-    db       = "db-server"
-  }
 }
 
 variable "security_group_ids" {
@@ -30,4 +25,9 @@ variable "security_group_ids" {
     db        = string
   })
   description = "Map of security group IDs"
+}
+
+variable "subnet_id" {
+  type        = string
+  description = "Subnet ID to launch instances in"
 }
