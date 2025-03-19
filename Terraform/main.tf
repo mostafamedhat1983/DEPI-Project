@@ -2,61 +2,55 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 4.0"
     }
   }
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = "us-west-2"
 }
 
-module "vpc" {
-  source = "./modules/vpc"
-  vpc_cidr_block = var.vpc_cidr_block
-  public_subnet_cidr_block = var.public_subnet_cidr_block
-  availability_zone = var.availability_zone
+variable "networks" {}
+variable "security_groups" {}
+variable "instances" {}
+
+module "key_pair" {
+  source = "./modules/key_pair"
 }
 
-module "security_groups" {
+module "network" {
+  source = "./modules/network"
+  networks = var.networks
+}
+
+module "security_group" {
   source = "./modules/security_groups"
-  vpc_id = module.vpc.vpc_id
-  sg_names = {
-    allow_ssh  = "allow_ssh"
-    frontend_sg = "frontend_sg"
-    backend_sg  = "backend_sg"
-    db_sg     = "db_sg"
-  }
-  ssh_port     = 22
-  frontend_port = 5174
-  backend_port  = 8080
-  db_port     = 3306
+  vpc_id = module.network.vpc_id
+  security_groups = var.security_groups
 }
 
 module "instances" {
-  source             = "./modules/instances"
-  subnet_id          = module.vpc.public_subnet_id
-  security_group_ids = module.security_groups.security_group_ids
-  instance_ami       = var.instance_ami
-  instance_type      = var.instance_type
-  instance_names = {
-    frontend = "frontend-server"
-    backend  = "backend-server"
-    db       = "db-server"
-  }
+  source = "./modules/instances"
+  instances = var.instances
+  subnets = module.network.subnets
+  security_groups = module.security_group.security_groups
+  key_pair = module.key_pair.key_pair
 }
 
-# Output to file
+# Output to file --> Inventory file structure for Ansible
 resource "null_resource" "instance_ips" {
   provisioner "local-exec" {
     command = <<EOT
-      echo "Frontend: Public IP: ${module.instances.frontend_public_ip}, Private IP: ${module.instances.frontend_private_ip}" >> instance_ips.txt
-      echo "Backend: Public IP: ${module.instances.backend_public_ip}, Private IP: ${module.instances.backend_private_ip}" >> instance_ips.txt
-      echo "DB: Public IP: ${module.instances.db_public_ip}, Private IP: ${module.instances.db_private_ip}" >> instance_ips.txt
+      echo "[Frontend_server]" >> inventory
+      echo "${module.instances.instance_ips["Frontend"]}" >> inventory
+      echo "[Backend_server]" >> inventory
+      echo "${module.instances.instance_ips["Backend"]}" >> inventory
+      echo "[DB_server]" >> inventory
+      echo "${module.instances.instance_ips["DB"]}" >> inventory
+      echo "[Jenkins_server]" >> inventory
+      echo "${module.instances.instance_ips["Jenkins"]}" >> inventory
     EOT
     working_dir = path.cwd
   }
-  depends_on = [
-    module.instances,
-  ]
 }

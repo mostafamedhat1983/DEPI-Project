@@ -1,33 +1,20 @@
-variable "instance_ami" {
-  type        = string
-  description = "AMI ID for instances"
+variable "instances" {
+  type = list(any)
 }
 
-variable "instance_type" {
-  type        = string
-  description = "Instance type for servers"
+variable "subnets" {
+  type = map(map(string))
 }
 
-variable "instance_names" {
+variable "security_groups" {
+  type = map(string)
+}
+
+variable "key_pair" {
   type = object({
-    frontend = string
-    backend  = string
-    db       = string
+    private_key_pem = string
+    public_key      = string
+    key_name        = string
+    private_key_path = string
   })
-  description = "Names for instances"
-}
-
-variable "security_group_ids" {
-  type = object({
-    allow_ssh = string
-    frontend  = string
-    backend   = string
-    db        = string
-  })
-  description = "Map of security group IDs"
-}
-
-variable "subnet_id" {
-  type        = string
-  description = "Subnet ID to launch instances in"
 }

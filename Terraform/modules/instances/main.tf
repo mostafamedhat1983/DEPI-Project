@@ -1,31 +1,39 @@
-resource "aws_instance" "db" {
-  ami             = var.instance_ami
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  vpc_security_group_ids = [var.security_group_ids.allow_ssh, var.security_group_ids.db]
+resource "aws_instance" "main" {
+  for_each = { for instance in var.instances : instance.name => instance }
+  ami                         = each.value.ami
+  instance_type               = each.value.instance_type
+  subnet_id                   = var.subnets[each.value.network][each.value.subnet_type]
+  vpc_security_group_ids      = [for sg in each.value.security_groups : var.security_groups[sg]]
+  associate_public_ip_address = each.value.associate_public_ip_address
   tags = {
-    Name = var.instance_names.db
+    Name = each.key
   }
-}
 
-resource "aws_instance" "backend" {
-  ami             = var.instance_ami
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  vpc_security_group_ids = [var.security_group_ids.allow_ssh, var.security_group_ids.backend]
-  depends_on = [aws_instance.db]
-  tags = {
-    Name = var.instance_names.backend
+  key_name = var.key_pair.key_name
+  provisioner "file" {
+    content     = var.key_pair.public_key
+    destination = "/tmp/mykey.pub"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.key_pair.private_key_path)
+      host        = self.public_ip
+    }
   }
-}
 
-resource "aws_instance" "frontend" {
-  ami             = var.instance_ami
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  vpc_security_group_ids = [var.security_group_ids.allow_ssh, var.security_group_ids.frontend]
-  depends_on = [aws_instance.backend]
-  tags = {
-    Name = var.instance_names.frontend
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir -p /home/ubuntu/.ssh",
+      "sudo cat /tmp/mykey.pub >> /home/ubuntu/.ssh/authorized_keys",
+      "sudo chmod 0600 /home/ubuntu/.ssh/authorized_keys",
+      "sudo chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys",
+      "rm /tmp/mykey.pub"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.key_pair.private_key_pem
+      host        = self.public_ip
+    }
   }
 }
