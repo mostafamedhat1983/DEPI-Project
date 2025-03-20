@@ -2,6 +2,12 @@ version: '3.9'
 services:
   backend:
     image: mostafamedhat1/e-commerce-platform_backend
+    environment:
+      - MYSQL_HOST=mysql  
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=my_database
+      - MYSQL_USER=test
+      - MYSQL_PASSWORD=test
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -44,6 +50,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
 
 volumes:
   mysql_data:
