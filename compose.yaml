@@ -19,6 +19,8 @@ services:
  
   frontend:
     build: ./devops-frontend
+   #environment:
+    # - API_URL= 
     ports:
       - "80:5174"
     depends_on:
