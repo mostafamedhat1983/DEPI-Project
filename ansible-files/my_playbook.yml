@@ -1,17 +1,19 @@
+# -------------------- Install and configure Jenkins --------------------
+
 - name: Install and configure Jenkins
   hosts: jenkins_servers
-  become: yes               # Enable sudo privileges
-  become_method: sudo       # Use sudo to escalate privileges
-  become_user: oem        # Run tasks as root
+  become: yes
+  become_method: sudo
+  become_user: root
 
   tasks:
-    - name: Install Java (OpenJDK)
+    - name: Install Java 17 (OpenJDK)  # Jenkins requires Java 17+
       apt:
-        name: openjdk-11-jdk
+        name: openjdk-17-jdk
         state: present
-        update_cache: yes
+        update_cache: yes        
 
-    - name: Install required dependencies for Jenkins
+    - name: Install required dependencies for Jenkins  # Essential packages for Jenkins
       apt:
         name: "{{ item }}"
         state: present
@@ -21,43 +23,45 @@
         - curl
         - software-properties-common
 
-    - name: Add Jenkins repository key
-      apt_key:
-        url: https://pkg.jenkins.io/jenkins.io.key
-        state: present
+    - name: Download Jenkins GPG key
+      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 
     - name: Add Jenkins repository
-      apt_repository:
-        repo: "deb http://pkg.jenkins.io/debian/ stable main"
-        state: present
+      shell: |
+        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
 
-    - name: Install Jenkins
+    - name: Install Jenkins  # Installs Jenkins package
       apt:
         name: jenkins
         state: present
         update_cache: yes
 
-    - name: Start Jenkins service
+    - name: Start and enable Jenkins service  # Ensures Jenkins runs on boot
       service:
         name: jenkins
         state: started
         enabled: yes
 
-    - name: Get the Jenkins initial admin password
+    - name: Get the Jenkins initial admin password  # Retrieves the first-time login password
       command: cat /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_admin_password
       changed_when: false
 
-    - name: Output Jenkins initial admin password
+    - name: Output Jenkins initial admin password  # Displays the password
       debug:
         msg: "Jenkins initial admin password: {{ jenkins_admin_password.stdout }}"
+
+# -------------------- Install Docker --------------------
 
 - name: Install Docker
   hosts: docker_hosts
   become: yes
+  become_method: sudo
+  become_user: root
 
   tasks:
-    - name: Install Docker dependencies
+    - name: Install Docker dependencies  # Required dependencies for Docker
       apt:
         name: "{{ item }}"
         state: present
@@ -67,46 +71,54 @@
         - curl
         - software-properties-common
 
-    - name: Add Docker GPG key
-      apt_key:
+    - name: Add Docker GPG key  # Adds Docker security key
+      get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+        dest: /usr/share/keyrings/docker-archive-keyring.gpg
+        mode: '0644'
 
-    - name: Add Docker repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        state: present
+    - name: Add Docker repository  # Adds Docker repo to the system
+      shell: echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
+      args:
+        creates: /etc/apt/sources.list.d/docker.list
 
-    - name: Install Docker
+    - name: Install Docker  # Installs Docker package
       apt:
         name: docker-ce
         state: present
+        update_cache: yes
 
-    - name: Start and enable Docker
+    - name: Start and enable Docker service  # Ensures Docker runs on boot
       service:
         name: docker
         state: started
         enabled: yes
 
+# -------------------- Install kubectl --------------------
+
 - name: Install kubectl
   hosts: kubectl_hosts
   become: yes
+  become_method: sudo
+  become_user: root
 
   tasks:
-    - name: Install kubectl
-      shell: |
-        curl -LO https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl
-        chmod +x kubectl
-        mv kubectl /usr/local/bin/
-      args:
-        creates: /usr/local/bin/kubectl
+    - name: Download and install kubectl  # Installs the Kubernetes CLI tool
+      get_url:
+        url: "https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl"
+        dest: "/usr/local/bin/kubectl"
+        mode: '0755'
+
+# -------------------- Configure Jenkins Plugins --------------------
 
 - name: Configure Jenkins plugins
   hosts: jenkins_servers
   become: yes
+  become_method: sudo
+  become_user: root
 
   tasks:
-    - name: Install Jenkins plugins
+    - name: Install Jenkins plugins  # Adds useful plugins to Jenkins
       jenkins_plugin:
         name: "{{ item }}"
         state: present
