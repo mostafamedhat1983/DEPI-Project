@@ -1,0 +1,119 @@
+- name: Install and configure Jenkins
+  hosts: jenkins_servers
+  become: yes               # Enable sudo privileges
+  become_method: sudo       # Use sudo to escalate privileges
+  become_user: oem        # Run tasks as root
+
+  tasks:
+    - name: Install Java (OpenJDK)
+      apt:
+        name: openjdk-11-jdk
+        state: present
+        update_cache: yes
+
+    - name: Install required dependencies for Jenkins
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+
+    - name: Add Jenkins repository key
+      apt_key:
+        url: https://pkg.jenkins.io/jenkins.io.key
+        state: present
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb http://pkg.jenkins.io/debian/ stable main"
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Start Jenkins service
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Get the Jenkins initial admin password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_admin_password
+      changed_when: false
+
+    - name: Output Jenkins initial admin password
+      debug:
+        msg: "Jenkins initial admin password: {{ jenkins_admin_password.stdout }}"
+
+- name: Install Docker
+  hosts: docker_hosts
+  become: yes
+
+  tasks:
+    - name: Install Docker dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Start and enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Install kubectl
+  hosts: kubectl_hosts
+  become: yes
+
+  tasks:
+    - name: Install kubectl
+      shell: |
+        curl -LO https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl
+        chmod +x kubectl
+        mv kubectl /usr/local/bin/
+      args:
+        creates: /usr/local/bin/kubectl
+
+- name: Configure Jenkins plugins
+  hosts: jenkins_servers
+  become: yes
+
+  tasks:
+    - name: Install Jenkins plugins
+      jenkins_plugin:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - git
+        - docker-workflow
+        - blueocean
+        - pipeline-utility-steps
+        - kubernetes
+
