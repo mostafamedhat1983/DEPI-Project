@@ -1,1 +1,0 @@
-export const SERVER_IP  = 'http://backend:8080'
