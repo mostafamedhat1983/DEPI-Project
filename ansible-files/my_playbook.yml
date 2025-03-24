@@ -109,23 +109,3 @@
         dest: "/usr/local/bin/kubectl"
         mode: '0755'
 
-# -------------------- Configure Jenkins Plugins --------------------
-
-- name: Configure Jenkins plugins
-  hosts: jenkins_servers
-  become: yes
-  become_method: sudo
-  become_user: root
-
-  tasks:
-    - name: Install Jenkins plugins  # Adds useful plugins to Jenkins
-      jenkins_plugin:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - git
-        - docker-workflow
-        - blueocean
-        - pipeline-utility-steps
-        - kubernetes
-
