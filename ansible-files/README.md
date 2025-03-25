@@ -1,23 +1,110 @@
-# Ansible Playbook Guide
+# Ansible Playbook for Jenkins, Docker, and kubectl
 
-## 📌 Prerequisites
-Before running the Ansible playbook, ensure you have the following:
+## Prerequisites
 
-- **Ansible Installed**: Install Ansible on your control machine (your local machine or a server):
-  ```bash
-  sudo apt update && sudo apt install ansible -y  # For Ubuntu/Debian
-  sudo yum install ansible -y  # For CentOS/RHEL
-  ```
+### 1️⃣ Supported Ubuntu Versions
+- **Ubuntu 22.04 LTS** (Recommended)
+- **Ubuntu 20.04 LTS** (Supported)
+- ❌ **Avoid Ubuntu 18.04 or older** (outdated packages)
 
-- **SSH Access**: Ensure the control machine can SSH into target hosts.
-  ```bash
-  ssh user@target_host
-  ```
-  If using passwordless authentication, set up SSH keys:
-  ```bash
-  ssh-keygen -t rsa -b 4096
-  ssh-copy-id user@target_host
-  ```
+### 2️⃣ Required System Packages
+Before running the playbook, install the following dependencies:
+```sh
+sudo apt update && sudo apt install -y \
+    curl wget apt-transport-https ca-certificates \
+    gnupg software-properties-common
+```
+
+### 3️⃣ Install Ansible (On Control Node)
+Ensure **Ansible 2.10+** is installed on the control machine:
+```sh
+sudo apt update
+sudo apt install -y ansible
+ansible --version
+```
+
+### 4️⃣ SSH Access to Target Machine
+The Ansible control node must have **passwordless SSH access** to the target machine.
+```sh
+ssh-copy-id -i ~/.ssh/id_rsa.pub ubuntu@<TARGET-IP>
+```
+For AWS EC2 instances, use the `.pem` key file:
+```sh
+ssh -i AnsibleKey.pem ubuntu@<TARGET-IP>
+```
+
+### 5️⃣ Python Installation on Target Machine
+Ensure **Python 3** is installed on the target machine:
+```sh
+python3 --version
+```
+If not installed:
+```sh
+sudo apt install -y python3 python3-apt
+```
+
+### 6️⃣ Sudo Privileges for Ansible User
+Ensure the user running Ansible has **sudo** access:
+```sh
+sudo usermod -aG sudo ubuntu
+```
+Verify with:
+```sh
+sudo -l
+```
+
+### 7️⃣ Open Required Firewall Ports
+Ensure required ports are open:
+```sh
+sudo ufw allow 22     # SSH
+sudo ufw allow 8080   # Jenkins
+sudo ufw allow 2376   # Docker (if needed)
+sudo ufw allow 6443   # Kubernetes API Server (if needed)
+sudo ufw enable
+```
+
+### 8️⃣ Java 17 for Jenkins
+Modify the playbook to install **Java 17** instead of Java 11:
+```yaml
+    - name: Install Java (OpenJDK 17)
+      apt:
+        name: openjdk-17-jdk
+        state: present
+        update_cache: yes
+```
+Verify installation:
+```sh
+java -version
+```
+Expected output:
+```
+openjdk version "17.0.X" ...
+```
+
+### 9️⃣ Ansible Inventory File
+Ensure your **inventory file** (`inventory.ini`) contains the correct target machine:
+```ini
+[jenkins_servers]
+196.221.30.137 ansible_user=ubuntu ansible_ssh_private_key_file=AnsibleKey.pem
+```
+
+## Running the Playbook 🚀
+After setting up everything, run the playbook with:
+```sh
+ansible-playbook -i inventory.ini my_playbook.yml
+```
+
+## Summary ✅
+| Component       | Required Version / Configuration |
+|----------------|--------------------------------|
+| **Ubuntu Version** | 22.04 LTS (preferred) or 20.04 LTS |
+| **Ansible Version** | 2.10+ |
+| **Python** | 3.6+ (installed by default on Ubuntu 20.04+) |
+| **Java for Jenkins** | OpenJDK 17 |
+| **SSH Access** | Set up with correct key (`.pem` for AWS) |
+| **User Privileges** | Must have sudo access |
+| **Firewall Rules** | Open ports 22, 8080, 2376, 6443 |
+
 
 ## 📂 Project Structure
 ```
@@ -92,9 +179,4 @@ If successful, you’ll see output like:
   ```
 
 - **Authentication failure?** Ensure SSH keys or correct passwords are set.
-
-- **Hosts unreachable?** Check network/firewall settings.
-
-## 📢 Conclusion
-This guide helps you set up and run an Ansible playbook efficiently. Modify it based on your requirements! 🚀
 
