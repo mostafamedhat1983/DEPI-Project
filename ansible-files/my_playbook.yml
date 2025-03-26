@@ -43,14 +43,15 @@
         state: started
         enabled: yes
 
-    - name: Get the Jenkins initial admin password  # Retrieves the first-time login password
+    - name: Get the Jenkins initial admin password
       command: cat /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_admin_password
       changed_when: false
+      ignore_errors: yes
 
-    - name: Output Jenkins initial admin password  # Displays the password
+    - name: Display Jenkins initial admin password (if available)
       debug:
-        msg: "Jenkins initial admin password: {{ jenkins_admin_password.stdout }}"
+        msg: "Jenkins initial admin password: {{ jenkins_admin_password.stdout | default('Not found. Jenkins might be configured already.') }}"
 
 # -------------------- Install Docker --------------------
 
@@ -108,6 +109,9 @@
         url: "https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl"
         dest: "/usr/local/bin/kubectl"
         mode: '0755'
+
+# -------------------- Verify Jenkins, Docker, and kubectl --------------------
+
 - name: Verify Jenkins, Docker, and kubectl
   hosts: all
   become: yes
