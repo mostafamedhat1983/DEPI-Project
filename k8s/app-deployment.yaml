@@ -24,14 +24,8 @@ spec:
           limits:
             cpu: 400m       
             memory: 512Mi   
-        env:
-         - name: DB_HOST
-           value: "mysql"
-         - name: DB_USER
-           value: "root"
-         - name: DB_PASS
-           value: "password"
-         - name: DB_DATABASE
-           value: "todo_db" 
+        envFrom:
+        - secretRef:
+            name: db-credentials
         ports:
         - containerPort: 5000
