@@ -108,4 +108,56 @@
         url: "https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl"
         dest: "/usr/local/bin/kubectl"
         mode: '0755'
+- name: Verify Jenkins, Docker, and kubectl
+  hosts: all
+  become: yes
+  tasks:
+    # Check Docker Version
+    - name: Check Docker Version
+      command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - debug:
+        msg: "Docker Installed: {{ docker_version.stdout }}"
+
+    # Check if Docker Service is Running
+    - name: Check if Docker Service is Running
+      systemd:
+        name: docker
+        state: started
+      register: docker_status
+
+    - debug:
+        msg: "Docker Service is {{ docker_status.status.ActiveState }}"
+
+    # Check kubectl Version
+    - name: Check kubectl Version
+      command: kubectl version --client
+      register: kubectl_version
+      changed_when: false
+
+    - debug:
+        msg: "kubectl Installed: {{ kubectl_version.stdout }}"
+
+    # Check if Jenkins is Running
+    - name: Check if Jenkins Service is Running
+      systemd:
+        name: jenkins
+        state: started
+      register: jenkins_status
+
+    - debug:
+        msg: "Jenkins Service is {{ jenkins_status.status.ActiveState }}"
+
+    # Get Jenkins Initial Admin Password (if needed)
+    - name: Get Jenkins Initial Admin Password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_admin_password
+      changed_when: false
+      ignore_errors: yes  # In case it's already configured
+
+    - debug:
+        msg: "Jenkins Initial Admin Password: {{ jenkins_admin_password.stdout }}"
+      when: jenkins_admin_password.stdout is defined
 
