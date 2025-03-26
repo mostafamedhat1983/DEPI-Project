@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-tasks-table-job
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      containers:
+      - name: mysql-client
+        image: mysql:8.0
+        env:
+        - name: DB_HOST
+          value: "mysql"  # Replace with your MySQL service name or hostname
+        - name: DB_USER
+          value: "root"   # Replace with your MySQL username
+        - name: DB_PASS
+          value: "password"  # Replace with your MySQL password
+        - name: DB_DATABASE
+          value: "todo_db"   # Replace with your database name
+        command: ["sh", "-c"]
+        args:
+          - |
+            mysql -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_DATABASE -e "CREATE TABLE IF NOT EXISTS tasks ( id SERIAL PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT, is_complete BOOLEAN DEFAULT false );"
+      restartPolicy: Never

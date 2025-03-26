@@ -1,0 +1,11 @@
+# aurora-external-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ExternalName
+  externalName: database-2.cluster-ckli8ayms0x4.us-east-1.rds.amazonaws.com
+  ports:
+    - port: 3306
+

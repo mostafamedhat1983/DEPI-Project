@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+  labels:
+    tier: app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      tier: app
+  template:
+    metadata:
+      labels:
+        tier: app
+    spec:
+      containers:
+      - name: app-container
+        image: mostafamedhat1/todo-app
+        env:
+         - name: DB_HOST
+           value: "mysql"            # Replace with your MySQL service name or hostname
+         - name: DB_USER
+           value: "root"             # Replace with your MySQL username
+         - name: DB_PASS
+           value: "password"         # Replace with your MySQL password
+         - name: DB_DATABASE
+           value: "todo_db" 
+        ports:
+        - containerPort: 5000
+
