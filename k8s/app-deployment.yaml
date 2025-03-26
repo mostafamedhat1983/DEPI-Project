@@ -17,15 +17,21 @@ spec:
       containers:
       - name: app-container
         image: mostafamedhat1/todo-app
+        resources:
+          requests:
+            cpu: 300m       
+            memory: 256Mi   
+          limits:
+            cpu: 400m       
+            memory: 512Mi   
         env:
          - name: DB_HOST
-           value: "mysql"            # Replace with your MySQL service name or hostname
+           value: "mysql"
          - name: DB_USER
-           value: "root"             # Replace with your MySQL username
+           value: "root"
          - name: DB_PASS
-           value: "password"         # Replace with your MySQL password
+           value: "password"
          - name: DB_DATABASE
            value: "todo_db" 
         ports:
         - containerPort: 5000
-
