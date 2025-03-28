@@ -14,16 +14,38 @@ spec:
       labels:
         tier: app
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: tier
+                  operator: In
+                  values:
+                  - app
+              topologyKey: "kubernetes.io/hostname"
+      initContainers:
+      - name: init-mysql
+        image: mysql:8.0
+        envFrom:
+        - secretRef:
+            name: db-credentials
+        command: ["sh", "-c"]
+        args:
+          - |
+            mysql -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_DATABASE -e "CREATE TABLE IF NOT EXISTS tasks ( id SERIAL PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT, is_complete BOOLEAN DEFAULT false );"
       containers:
       - name: app-container
         image: mostafamedhat1/todo-app
         resources:
           requests:
-            cpu: 300m       
-            memory: 256Mi   
+            cpu: 300m
+            memory: 256Mi
           limits:
-            cpu: 400m       
-            memory: 512Mi   
+            cpu: 400m
+            memory: 512Mi
         envFrom:
         - secretRef:
             name: db-credentials
