@@ -13,6 +13,26 @@ resource "aws_iam_role" "cluster" {
   })
 }
 
+resource "aws_iam_policy" "eks_rds_access" {
+  name        = "${var.cluster_name}-rds-access"
+  description = "Policy for EKS nodes to access RDS/Aurora"
+  
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "rds:Describe*",
+          "rds:List*",
+          "rds-db:connect"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "cluster" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.cluster.name
@@ -79,6 +99,16 @@ resource "aws_iam_role_policy_attachment" "eks_worker_policies" {
   ])
 
   policy_arn = each.value
+  role       = aws_iam_role.nodes.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_rds_access" {
+  policy_arn = aws_iam_policy.eks_rds_access.arn
+  role       = aws_iam_role.nodes.name
+}
+
+resource "aws_iam_role_policy_attachment" "rds_full_access" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonRDSFullAccess"
   role       = aws_iam_role.nodes.name
 }
 
